@@ -109,6 +109,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def handleButtonChar(self):
         self.karakteristika = self.listWidget_characteristics.currentItem().data(QtCore.Qt.UserRole)
 
+        self.tekst = self.karakteristika.value().data().decode()                #Ispis prve vrijednosti karakteristike odabrane
+        self.textBrowser_3.append("Received: {0}".format(self.tekst))
+
         self.type = QBluetoothUuid(QBluetoothUuid.ClientCharacteristicConfiguration)
         self.descript = self.karakteristika.descriptor(self.type)
 
