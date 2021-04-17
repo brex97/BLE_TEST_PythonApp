@@ -121,7 +121,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.HRVAL = QByteArray()
         self.HRVAL = newVal
         self.strng = int(self.HRVAL[1].hex(), 16)
-        print(self.strng)
+        #print(self.strng)
+        self.textBrowser_3.append("Heart rate : {0}".format(self.strng))
         
     def updateOutput(self, message):
         self.textBrowser_2.append(message)
