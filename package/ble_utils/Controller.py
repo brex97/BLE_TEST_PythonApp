@@ -59,7 +59,10 @@ class BLE_Controller(QObject):
         print(self.openedService.serviceName() + '\n')
 
         self.openedService.stateChanged.connect(self.handleServiceOpened)
+        #self.openedService.characteristicChanged.connect(self.handleCharChanged)
         self.openedService.discoverDetails()
 
     def handleServiceOpened(self):
         self.serviceOpened.emit()
+
+    

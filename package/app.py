@@ -1,5 +1,6 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QByteArray
 from PyQt5.QtBluetooth import QBluetoothUuid
 from package.gui import Ui_MainWindow
 from package.ble_utils.Scan import BLE_Scanner
@@ -21,6 +22,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_clearOut_2.clicked.connect(self.clearOutput2)
         self.pushButton_Disconnect.clicked.connect(self.handleButtonDisconnect)
         self.pushButtonService.clicked.connect(self.handleButtonService)
+        self.pushButton_Characteristic.clicked.connect(self.handleButtonChar)
         #BLE Scanner events
         self.pushButtonScan.clicked.connect(self.handleButtonScan)
         self.ble_scanner.discoveryAgent.finished.connect(self.updateList)
@@ -100,10 +102,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         for obj in self.ble_controller.openedService.characteristics():
             self.itemChar = QtWidgets.QListWidgetItem()
-            self.itemChar.setText(obj.name())
+            self.itemChar.setText(obj.uuid().toString())
             self.itemChar.setData(QtCore.Qt.UserRole, obj)
             self.listWidget_characteristics.addItem(self.itemChar)
 
+    def handleButtonChar(self):
+        self.karakteristika = self.listWidget_characteristics.currentItem().data(QtCore.Qt.UserRole)
+
+        self.type = QBluetoothUuid(QBluetoothUuid.ClientCharacteristicConfiguration)
+        self.descript = self.karakteristika.descriptor(self.type)
+
+        self.array = QByteArray(b'\x01\x00')        #turn on NOTIFY for characteristic
+
+        self.ble_controller.openedService.characteristicChanged.connect(self.updateVal)
+        self.ble_controller.openedService.writeDescriptor(self.descript, self.array)    #turon on NOTIFY
+    
+    def updateVal(self, Charac, newVal):
+        self.HRVAL = QByteArray()
+        self.HRVAL = newVal
+        self.strng = int(self.HRVAL[1].hex(), 16)
+        print(self.strng)
+        
     def updateOutput(self, message):
         self.textBrowser_2.append(message)
 
