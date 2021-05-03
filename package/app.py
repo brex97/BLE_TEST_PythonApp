@@ -1,11 +1,10 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QByteArray
-from PyQt5.QtBluetooth import QBluetoothUuid
+from PyQt5.QtBluetooth import QBluetoothUuid, QLowEnergyService
 from package.gui import Ui_MainWindow
 from package.ble_utils.Scan import BLE_Scanner
 from package.ble_utils.Controller import BLE_Controller
-from package.ble_utils.ServiceDiscovery import BLE_ServiceAgent
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -14,10 +13,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.ble_scanner = BLE_Scanner()
         self.ble_controller = BLE_Controller()
-        #self.ble_serviceAgent = BLE_ServiceAgent()
+
+        self.pushButton_Conn.setEnabled(False)  ##initially not enabled, only after device selection
+        self.pushButtonService.setEnabled(False) ## initialy not enabled, only after service selection
+        self.pushButton_Characteristic.setEnabled(False)   #same
 
     #Event signals
         self.listWidget.itemClicked.connect(self.selectedFromList)
+        self.listWidget_2.itemClicked.connect(self.serviceClicked)
+        self.listWidget_characteristics.itemClicked.connect(self.characteristicClicked)
         self.pushButton_clearOut.clicked.connect(self.clearOutput)
         self.pushButton_clearOut_2.clicked.connect(self.clearOutput2)
         self.pushButton_Disconnect.clicked.connect(self.handleButtonDisconnect)
@@ -32,7 +36,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ble_controller.controllerOutputMessage.connect(self.updateOutput2)
         self.pushButton_Conn.clicked.connect(self.handleButtonConn)
         self.ble_controller.controllerConnected.connect(self.handleDeviceConnected)
-        self.ble_controller.serviceFound.connect(self.handleServicesFound)
+        self.ble_controller.servicesFound.connect(self.handleServicesFound)
         #BLE Service events
         self.ble_controller.serviceOpened.connect(self.handleCharacteristics)
     
@@ -77,8 +81,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.listWidget.clear()     #found devices on page 1
         self.textBrowser.clear()    #device info on page 1
         self.listWidget_2.clear()   #services list on page 2
-        self.textBrowser_4.clear()  #page 2 char browser
+        self.listWidget_characteristics.clear()  #page 2 char browser
+        self.textBrowser_3.clear()  ##output on page 2
         self.pushButton_Conn.setEnabled(False)
+        self.pushButtonService.setEnabled(False)
+        self.pushButton_Characteristic.setEnabled(False)
 
     def handleDeviceConnected(self):
         print("Changing page\n")
@@ -86,15 +93,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.textBrowser_3.append(">>Connected to device\n")
         #self.ble_serviceAgent.scan_services(self.ble_controller.ble_device.address())
 
-    def handleServicesFound(self, service):
-        self.ble_service_uuid = QBluetoothUuid(service)
-        self.itemService = QtWidgets.QListWidgetItem()
-        self.itemService.setText(self.ble_service_uuid.toString())
-        self.itemService.setData(QtCore.Qt.UserRole, self.ble_service_uuid)
-        self.listWidget_2.addItem(self.itemService)
+    def handleServicesFound(self):
+        for servicesUids in self.ble_controller.controller.services():
+            self.ble_service_uuid = QBluetoothUuid(servicesUids)
+            print(self.ble_service_uuid.toString())
+            self.foundService = self.ble_controller.controller.createServiceObject(self.ble_service_uuid)
+            if self.foundService == None:
+                print("Not created")
+            self.itemService = QtWidgets.QListWidgetItem()
+            self.itemService.setText(self.foundService.serviceName())
+            self.itemService.setData(QtCore.Qt.UserRole, self.ble_service_uuid)
+            self.listWidget_2.addItem(self.itemService)
+
+    def serviceClicked(self):
+        self.pushButtonService.setEnabled(True)
 
     def handleButtonService(self):
        #self.listWidget_characteristics.clear()
+        self.pushButton_Characteristic.setEnabled(False)
         self.ble_controller.readService(self.listWidget_2.currentItem().data(QtCore.Qt.UserRole))
 
     def handleCharacteristics(self):
@@ -105,6 +121,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.itemChar.setText(obj.uuid().toString())
             self.itemChar.setData(QtCore.Qt.UserRole, obj)
             self.listWidget_characteristics.addItem(self.itemChar)
+
+    def characteristicClicked(self):
+        self.pushButton_Characteristic.setEnabled(True)
 
     def handleButtonChar(self):
         self.karakteristika = self.listWidget_characteristics.currentItem().data(QtCore.Qt.UserRole)

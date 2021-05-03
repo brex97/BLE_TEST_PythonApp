@@ -4,7 +4,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 class BLE_Controller(QObject):
     controllerOutputMessage = pyqtSignal(str)
     controllerConnected = pyqtSignal()
-    serviceFound = pyqtSignal(str)
+    servicesFound = pyqtSignal()
     serviceOpened = pyqtSignal()
 
     def __init__(self):
@@ -35,9 +35,9 @@ class BLE_Controller(QObject):
         self.controllerConnected.emit()
         self.controller.discoverServices()
 
-    def addLEservice(self, serv):
-        print("Found service {0}\n".format(serv))
-        self.serviceFound.emit(serv.toString())
+    def addLEservice(self, servUid):        #debugging purpose function, can delete later
+        self.serviceUid = servUid
+        print("Found service {0}\n".format(self.serviceUid.toString()))
 
     def errorReceived(self, errMessage):
         print("error ")
@@ -50,10 +50,11 @@ class BLE_Controller(QObject):
 
     def serviceScanDone(self):
         print("Service scan done\n")
+        self.servicesFound.emit()
         self.controllerOutputMessage.emit(">>Services scan done\n")
 
-    def readService(self, ble_service):
-        self.openedService = self.controller.createServiceObject(ble_service)
+    def readService(self, ble_service_UID):
+        self.openedService = self.controller.createServiceObject(ble_service_UID)
         if self.openedService == None:
             print("ERR: Cannot open service\n")
         print(self.openedService.serviceName() + '\n')
