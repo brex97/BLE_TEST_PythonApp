@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonService.setEnabled(True)
 
     def handleButtonService(self):
-       #self.listWidget_characteristics.clear()
+        #self.listWidget_characteristics.clear()
         self.pushButton_Characteristic.setEnabled(False)
         self.ble_controller.readService(self.listWidget_2.currentItem().data(QtCore.Qt.UserRole))
 
@@ -118,7 +118,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         for obj in self.ble_controller.openedService.characteristics():
             self.itemChar = QtWidgets.QListWidgetItem()
-            self.itemChar.setText(obj.uuid().toString())
+            if (obj.name() == ""):
+                self.itemChar.setText("Unknown characteristic")
+            else:
+                self.itemChar.setText(obj.name())
             self.itemChar.setData(QtCore.Qt.UserRole, obj)
             self.listWidget_characteristics.addItem(self.itemChar)
 
@@ -137,7 +140,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.array = QByteArray(b'\x01\x00')        #turn on NOTIFY for characteristic
 
         self.ble_controller.openedService.characteristicChanged.connect(self.updateVal)
-        self.ble_controller.openedService.writeDescriptor(self.descript, self.array)    #turon on NOTIFY
+        self.ble_controller.openedService.writeDescriptor(self.descript, self.array)    #turn on NOTIFY
     
     def updateVal(self, Charac, newVal):
         self.HRVAL = QByteArray()
