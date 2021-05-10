@@ -131,11 +131,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     # When service is succesfully opened, we open appropriate page
     #   CURRENTLY IMPLEMENTED SPECIAL SERVICE PAGES:
     #       - HEART RATE SERVICE
+    #       - Cable replacement service with custom Uuid '0000fe60-cc7a-482a-984a-7f2ed5b3e58f'
     #
     # if not special service is selected, we simply list service characteristics on same page
     def handleOpenedService(self):
         self.listWidget_characteristics.clear()
-
         # IF Heart Rate Service Selected then open HR Page
         if (self.ble_controller.openedService.serviceUuid() == QBluetoothUuid(QBluetoothUuid.HeartRate)):
             #print("TEST")
@@ -143,9 +143,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.setupHeartRatePage()
 
         ##WIP
-        #elif (self.ble_controller.openedService.serviceUuid == UUIDCustomKarakteristike):
+        elif (self.ble_controller.openedService.serviceUuid() == QBluetoothUuid("{0000fe60-cc7a-482a-984a-7f2ed5b3e58f}")):
             # DODATI CUSTOM OBRADU
-           # self.stackedWidget.setCurrentIndex(3)      #SWITCH to BIOMED Page
+            #print("TEST")
+            self.stackedWidget.setCurrentIndex(3)      #SWITCH to BIOMED Page
+            self.setupCRS_customPage()
         
         #if no special service selected, stay on current page view
         else:
@@ -178,7 +180,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def updateVal(self, Charac, newVal):
         self.val = QByteArray()
         self.val = newVal
-        self.strng = int(self.val[1].hex(), 16)
+
+        #self.strng = int(self.val[1].hex(), 16)
+        self.strng = self.val.data().decode()           #decode bytes to string
         #print(self.strng)
         self.textBrowser_3.append("Received value : {0}".format(self.strng))
 
@@ -215,10 +219,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.HearRateValueString = int(self.HearRateValue[1].hex(), 16)
 
         self.lcdHeartRate.display(self.HearRateValueString)     #update lcd display
-        self.updateGraph(self.HearRateValueString)              # plot new values
+        self.updateHRGraph(self.HearRateValueString)              # plot new values
 
     #UPDATE graph values
-    def updateGraph(self, Yvalue):
+    def updateHRGraph(self, Yvalue):
         if(len(self.HRvaluesArray) > 200):
             self.HRvaluesArray = self.HRvaluesArray[1:]         #remove first elements after 200 inputs
             self.timevaluesArray = self.timevaluesArray[1:]
@@ -229,6 +233,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.timevaluesArray.append(self.elapsed_time)
 
         self.data_line.setData(self.timevaluesArray, self.HRvaluesArray)
+
+################# Custom Cable replacement service PAGE #####################
+    def setupCRS_customPage(self):
+        #graph setup
+        self.max30001_graph.setBackground('w')
+        self.RXvaluesArray = [0]         #Recieved values for plotting
+        self.timevaluesArray = [0]           #Time values for plotting
+        self.start_time = time.perf_counter()  #Start collecting time value
+        pen = mkPen(color=(255, 0, 0))
+        self.data_line =  self.max30001_graph.plot(self.timevaluesArray, self.RXvaluesArray, pen=pen)
+
+        # Subscribe to notification for CRS RX value changes via descriptor writing
+        self.RXMeasurChar = self.ble_controller.openedService.characteristic(QBluetoothUuid("{0000fe62-8e22-4541-9d4c-21edae82ed19}"))        #uuid RX karakteristike
+        if (self.RXMeasurChar.isValid() == False):
+            print("ERR: Cannot read RX characteristic\n")
+
+        self.RXCharCfg = QBluetoothUuid(QBluetoothUuid.ClientCharacteristicConfiguration)
+        self.RXdescript = self.RXMeasurChar.descriptor(self.RXCharCfg)
+        if (self.RXdescript.isValid() == False):
+            print("ERR: Cannot create notification for CRS RX value\n")
+
+        self.array = QByteArray(b'\x01\x00')        #turn on NOTIFY for characteristic
+
+        self.ble_controller.openedService.characteristicChanged.connect(self.handleRXValueChanged)
+        self.ble_controller.openedService.writeDescriptor(self.RXdescript, self.array)    #turn on NOTIFY
+
+    #called when RX value changed
+    def handleRXValueChanged(self, Charac, newVal):
+        self.RXValue = QByteArray()
+        self.RXValue = newVal
+        self.RXValueString = self.RXValue.data().decode()
+        self.RXValueFloat = float(self.RXValueString)
+
+        self.updateBMEDGraph(self.RXValueFloat)              # plot new values
+
+    #UPDATE graph values
+    def updateBMEDGraph(self, Yvalue):
+        if(len(self.RXvaluesArray) > 700):
+            self.RXvaluesArray = self.RXvaluesArray[1:]         #remove first elements after 200 inputs
+            self.timevaluesArray = self.timevaluesArray[1:]
+
+        self.RXvaluesArray.append(Yvalue)
+
+        self.elapsed_time = time.perf_counter() - self.start_time
+        self.timevaluesArray.append(self.elapsed_time)
+
+        self.data_line.setData(self.timevaluesArray, self.RXvaluesArray)
+
 
 
 ###### SOME OUTPUTS AND ERROR HANDLE #####################

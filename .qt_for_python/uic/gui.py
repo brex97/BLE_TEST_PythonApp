@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui.ui'
+# Form implementation generated from reading ui file 'c:\Users\user\Desktop\dipl_rad_python_app\ble_test_app\package\gui.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
 #
@@ -309,13 +309,3 @@ class Ui_MainWindow(object):
         self.label_6.setText(_translate("MainWindow", "MAX30001 window"))
         self.pushButton_2.setText(_translate("MainWindow", "Disconnect"))
 from pyqtgraph import PlotWidget
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
