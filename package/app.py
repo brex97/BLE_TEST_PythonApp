@@ -1,7 +1,8 @@
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QByteArray
+from PyQt5.QtCore import QByteArray, QDate, QTime, QDateTime, QFile
+from PyQt5.QtWidgets import QDialog, QFileDialog
 from PyQt5.QtBluetooth import QBluetoothUuid, QLowEnergyService
 from pyqtgraph import PlotWidget, plot, mkPen
 from package.gui import Ui_MainWindow
@@ -30,6 +31,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_Disconnect.clicked.connect(self.handleButtonDisconnect)
         self.pushButtonService.clicked.connect(self.handleButtonService)
         self.pushButton_Characteristic.clicked.connect(self.handleButtonChar)
+        self.buttonRecordBMED.clicked.connect(self.handleButtonRecordBMED)
         #BLE Scanner events
         self.pushButtonScan.clicked.connect(self.handleButtonScan)
         self.ble_scanner.discoveryAgent.finished.connect(self.updateList)
@@ -236,6 +238,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 ################# Custom Cable replacement service PAGE #####################
     def setupCRS_customPage(self):
+        self.recordingActive = False
         #graph setup
         self.max30001_graph.setBackground('w')
         self.RXvaluesArray = [0]         #Recieved values for plotting
@@ -268,6 +271,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.updateBMEDGraph(self.RXValueFloat)              # plot new values
 
+        
+
     #UPDATE graph values
     def updateBMEDGraph(self, Yvalue):
         if(len(self.RXvaluesArray) > 700):
@@ -281,6 +286,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.data_line.setData(self.timevaluesArray, self.RXvaluesArray)
 
+        if(self.recordingActive == True):
+            self.BMED_textbrowser.append(str(self.elapsed_time) + ";" + str(Yvalue))
+
+    def handleButtonRecordBMED(self):
+        if (self.recordingActive == False):
+            self.buttonRecordBMED.setText("Stop Recording")
+            #write to text browser
+            self.BMED_textbrowser.append("Log started on " + QDateTime.currentDateTime().toString())
+            self.recordingActive = True
+
+        else:
+            self.recordingActive = False
+            self.buttonRecordBMED.setText("Start Recording")
+            self.fileSettings = QFileDialog.getSaveFileName()
+            self.fileName = self.fileSettings[0]
+            print(self.fileName)
+            self.file = QFile(self.fileName)
+            self.textout = self.BMED_textbrowser.toPlainText()
+            if self.file.open(QtCore.QIODevice.ReadWrite):
+                QtCore.QTextStream(self.file) << self.textout
+            else:
+                QtWidgets.QMessageBox.information(self.tempwizardPage, 'Unable to open file', file.errorString())
+            self.file.close()
+            #create file and copy content from text browser
+
+        #change to stop recording
 
 
 ###### SOME OUTPUTS AND ERROR HANDLE #####################
