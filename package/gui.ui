@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>922</width>
-    <height>648</height>
+    <width>583</width>
+    <height>555</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -366,7 +366,7 @@
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QPushButton" name="HR_disconn">
+           <widget class="QPushButton" name="buttonHRdisconnect">
             <property name="text">
              <string>Disconnect</string>
             </property>
@@ -408,7 +408,7 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QPushButton" name="pushButton_2">
+           <widget class="QPushButton" name="buttonBMEDdisconnect">
             <property name="text">
              <string>Disconnect</string>
             </property>
@@ -427,7 +427,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>922</width>
+     <width>583</width>
      <height>21</height>
     </rect>
    </property>

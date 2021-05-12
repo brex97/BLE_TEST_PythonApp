@@ -32,6 +32,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonService.clicked.connect(self.handleButtonService)
         self.pushButton_Characteristic.clicked.connect(self.handleButtonChar)
         self.buttonRecordBMED.clicked.connect(self.handleButtonRecordBMED)
+        self.buttonBMEDdisconnect.clicked.connect(self.handleButtonDisconnect)
+        self.buttonHRdisconnect.clicked.connect(self.handleButtonDisconnect)
         #BLE Scanner events
         self.pushButtonScan.clicked.connect(self.handleButtonScan)
         self.ble_scanner.discoveryAgent.finished.connect(self.updateList)
@@ -264,12 +266,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     #called when RX value changed
     def handleRXValueChanged(self, Charac, newVal):
-        self.RXValue = QByteArray()
-        self.RXValue = newVal
-        self.RXValueString = self.RXValue.data().decode()
-        self.RXValueFloat = float(self.RXValueString)
+        if (Charac.uuid() == QBluetoothUuid("{0000fe62-8e22-4541-9d4c-21edae82ed19}")):
+            self.RXValue = QByteArray()
+            self.RXValue = newVal
+            self.RXValueString = self.RXValue.data().decode()
+            self.RXValueFloat = float(self.RXValueString)
 
-        self.updateBMEDGraph(self.RXValueFloat)              # plot new values
+            self.updateBMEDGraph(self.RXValueFloat)              # plot new values
 
         
 
@@ -299,19 +302,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             self.recordingActive = False
             self.buttonRecordBMED.setText("Start Recording")
-            self.fileSettings = QFileDialog.getSaveFileName()
-            self.fileName = self.fileSettings[0]
-            print(self.fileName)
-            self.file = QFile(self.fileName)
-            self.textout = self.BMED_textbrowser.toPlainText()
-            if self.file.open(QtCore.QIODevice.ReadWrite):
-                QtCore.QTextStream(self.file) << self.textout
-            else:
-                QtWidgets.QMessageBox.information(self.tempwizardPage, 'Unable to open file', file.errorString())
-            self.file.close()
+
+            self.saveToFile(self.BMED_textbrowser.toPlainText())
+            # self.fileSettings = QFileDialog.getSaveFileName()
+            # self.fileName = self.fileSettings[0]
+            # print(self.fileName)
+            # self.file = QFile(self.fileName)
+            # self.textout = self.BMED_textbrowser.toPlainText()
+            # if self.file.open(QtCore.QIODevice.ReadWrite):
+            #     QtCore.QTextStream(self.file) << self.textout
+            # else:
+            #     QtWidgets.QMessageBox.information(self.tempwizardPage, 'Unable to open file', file.errorString())
+            # self.file.close()
             #create file and copy content from text browser
 
         #change to stop recording
+
+############ SAVE TEXT TO FILE ###########################################
+
+    def saveToFile(self, text):
+        self.textout = text
+
+        self.fileSettings = QFileDialog.getSaveFileName()
+        self.fileName = self.fileSettings[0]
+        print(self.fileName)
+        self.file = QFile(self.fileName)
+
+        if self.file.open(QtCore.QIODevice.ReadWrite):
+            QtCore.QTextStream(self.file) << self.textout
+        else:
+            QtWidgets.QMessageBox.information(self.tempwizardPage, 'Unable to open file', file.errorString())
+        self.file.close()
+        
+############ DISCONNECT FROM DEVICE WHEN SERVICE IS OPENED ###############
+
+    def handleServiceDisconnectButton(self):
+        print("A")
+
 
 
 ###### SOME OUTPUTS AND ERROR HANDLE #####################
