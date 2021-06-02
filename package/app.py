@@ -152,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #print("TEST")
             self.stackedWidget.setCurrentIndex(3)      #SWITCH to BIOMED Page
             self.setupCRS_customPage()
-        
+            
         #if no special service selected, stay on current page view
         else:
             for obj in self.ble_controller.openedService.characteristics():
@@ -218,12 +218,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     #called when HR value changed
     def handleHRValueChanged(self, Charac, newVal):
-        self.HearRateValue = QByteArray()
-        self.HearRateValue = newVal
-        self.HearRateValueString = int(self.HearRateValue[1].hex(), 16)
+        self.HeartRateValue = QByteArray()
+        self.HeartRateValue = newVal
+        self.HeartRateValueString = int(self.HeartRateValue[1].hex(), 16)
 
-        self.lcdHeartRate.display(self.HearRateValueString)     #update lcd display
-        self.updateHRGraph(self.HearRateValueString)              # plot new values
+        self.lcdHeartRate.display(self.HeartRateValueString)     #update lcd display
+        self.updateHRGraph(self.HeartRateValueString)              # plot new values
 
     #UPDATE graph values
     def updateHRGraph(self, Yvalue):
@@ -241,10 +241,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 ################# Custom Cable replacement service PAGE #####################
     def setupCRS_customPage(self):
         self.recordingActive = False
+        self.elapsed_time = 0
+        self.isICMReceived = False
         #graph setup
         self.max30001_graph.setBackground('w')
-        self.RXvaluesArray = [0]         #Recieved values for plotting
-        self.timevaluesArray = [0]           #Time values for plotting
+        self.RXvaluesArray = [0.0]         #Recieved values for plotting
+        self.timevaluesArray = [0.0]           #Time values for plotting
         self.start_time = time.perf_counter()  #Start collecting time value
         pen = mkPen(color=(255, 0, 0))
         self.data_line =  self.max30001_graph.plot(self.timevaluesArray, self.RXvaluesArray, pen=pen)
@@ -268,29 +270,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def handleRXValueChanged(self, Charac, newVal):
         if (Charac.uuid() == QBluetoothUuid("{0000fe62-8e22-4541-9d4c-21edae82ed19}")):
             self.RXValue = QByteArray()
+            print(newVal)
             self.RXValue = newVal
             self.RXValueString = self.RXValue.data().decode()
+            
             self.RXValueFloat = float(self.RXValueString)
+            self.elapsed_time = time.perf_counter() - self.start_time
 
-            self.updateBMEDGraph(self.RXValueFloat)              # plot new values
+            self.updateBMEDGraph(self.elapsed_time, self.RXValueFloat)              # plot new values
+            if(self.recordingActive == True):
+                self.updateLog(self.elapsed_time, self.RXValueString)
+
+            # if (self.RXValueString == "START_ICM\r\n"):
+            #     self.isICMReceived = True
+            #     self.elapsed_time = time.perf_counter() - self.start_time
+            #     self.ICMstringToLog = str(self.elapsed_time)
+            #     return
+            # elif((self.RXValueString == "END_ICM\r\n")):
+            #     self.isICMReceived = False
+            #     self.ICMstringToLog = self.ICMstringToLog + "\r\n"
+            #     #self.updateLog(self.ICMstringToLog)
+            #     return
+            # else:
+            #     if (self.isICMReceived == True):
+            #         self.ICMstringToLog = self.ICMstringToLog + ";" + self.RXValueString
+
+            #     else:                                                       #Data is not ICM
+                    
 
         
 
     #UPDATE graph values
-    def updateBMEDGraph(self, Yvalue):
+    def updateBMEDGraph(self, XValue, Yvalue):
         if(len(self.RXvaluesArray) > 700):
             self.RXvaluesArray = self.RXvaluesArray[1:]         #remove first elements after 200 inputs
             self.timevaluesArray = self.timevaluesArray[1:]
 
         self.RXvaluesArray.append(Yvalue)
-
-        self.elapsed_time = time.perf_counter() - self.start_time
-        self.timevaluesArray.append(self.elapsed_time)
+        
+        self.timevaluesArray.append(XValue)
 
         self.data_line.setData(self.timevaluesArray, self.RXvaluesArray)
 
-        if(self.recordingActive == True):
-            self.BMED_textbrowser.append(str(self.elapsed_time) + ";" + str(Yvalue))
+
+    def updateLog(self,XDataToLog, YDataToLog):
+        self.RxStringValue = YDataToLog
+        self.TimeValue = XDataToLog
+
+        self.BMED_textbrowser.append(str(self.TimeValue) + ";" + self.RxStringValue)
+
 
     def handleButtonRecordBMED(self):
         if (self.recordingActive == False):

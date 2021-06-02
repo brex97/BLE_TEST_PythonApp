@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>583</width>
-    <height>555</height>
+    <width>932</width>
+    <height>645</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -365,10 +365,21 @@
             </property>
            </widget>
           </item>
+          <item row="3" column="0">
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+             <widget class="QPushButton" name="pushButtonNotifyHR">
+              <property name="text">
+               <string>Pause data tracking</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
           <item row="4" column="0">
            <widget class="QPushButton" name="buttonHRdisconnect">
             <property name="text">
-             <string>Disconnect</string>
+             <string>Disconnect from device</string>
             </property>
            </widget>
           </item>
@@ -383,6 +394,38 @@
         </item>
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="0">
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Training zone:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>TextLabel</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>TextLabel</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Current device mode:</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
           <item row="0" column="1">
            <widget class="QTextBrowser" name="BMED_textbrowser">
             <property name="sizePolicy">
@@ -393,6 +436,31 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="0" rowspan="2">
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QPushButton" name="pushButton_NotifyBMED">
+              <property name="text">
+               <string>Pause data tracking</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_ConfigBMED">
+              <property name="text">
+               <string>Change device mode</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="buttonBMEDdisconnect">
+              <property name="text">
+               <string>Disconnect from device</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
           <item row="1" column="1">
            <widget class="QPushButton" name="buttonRecordBMED">
             <property name="text">
@@ -400,23 +468,24 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>MAX30001 window</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="buttonBMEDdisconnect">
-            <property name="text">
-             <string>Disconnect</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="page_maxConfig">
+       <widget class="QLabel" name="label_9">
+        <property name="geometry">
+         <rect>
+          <x>110</x>
+          <y>200</y>
+          <width>121</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Device config page</string>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -427,8 +496,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>583</width>
-     <height>21</height>
+     <width>932</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>

@@ -59,16 +59,17 @@ class BLE_Controller(QObject):
             print("ERR: Cannot open service\n")
         print(self.openedService.serviceName() + '\n')
 
-        if (self.openedService.state() == QLowEnergyService.DiscoveryRequired):
-            self.openedService.stateChanged.connect(self.handleServiceOpened)
-            #self.openedService.characteristicChanged.connect(self.handleCharChanged)
-            self.openedService.discoverDetails()
-        elif (self.openedService.state() == QLowEnergyService.ServiceDiscovered):
+        if (self.openedService.state() == QLowEnergyService.ServiceDiscovered):
             self.handleServiceOpened()
+            
+        elif (self.openedService.state() == QLowEnergyService.DiscoveryRequired):
+            self.openedService.stateChanged.connect(self.handleServiceOpened)
+            self.openedService.discoverDetails()
         else:
             print("Cannot discover service\n")
 
     def handleServiceOpened(self):
-        self.serviceOpened.emit()
+        if (self.openedService.state() == QLowEnergyService.ServiceDiscovered):
+            self.serviceOpened.emit()
 
     
