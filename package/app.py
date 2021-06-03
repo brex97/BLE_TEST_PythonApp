@@ -1,9 +1,10 @@
 import sys
 import time
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QByteArray, QDate, QTime, QDateTime, QFile
+from PyQt5 import QtCore, QtGui, QtWidgets, QtSerialPort
+from PyQt5.QtCore import QByteArray, QDate, QIODevice, QTime, QDateTime, QFile
 from PyQt5.QtWidgets import QDialog, QFileDialog
 from PyQt5.QtBluetooth import QBluetoothUuid, QLowEnergyService
+from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from pyqtgraph import PlotWidget, plot, mkPen
 from package.gui import Ui_MainWindow
 from package.ble_utils.Scan import BLE_Scanner
@@ -34,6 +35,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.buttonRecordBMED.clicked.connect(self.handleButtonRecordBMED)
         self.buttonBMEDdisconnect.clicked.connect(self.handleButtonDisconnect)
         self.buttonHRdisconnect.clicked.connect(self.handleButtonDisconnect)
+        self.pushButton_Configuration.clicked.connect(self.handleButtonConfiguration)
+        # Max30001 device configuration signals
+        
         #BLE Scanner events
         self.pushButtonScan.clicked.connect(self.handleButtonScan)
         self.ble_scanner.discoveryAgent.finished.connect(self.updateList)
@@ -85,6 +89,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #Connects to device selected in listview
     def handleButtonConn(self):
         self.ble_controller.connectDevice(self.listWidget.currentItem().data(QtCore.Qt.UserRole))
+
+    def handleButtonConfiguration(self):
+        self.stackedWidget.setCurrentIndex(4)  #switch to "Configuration page"
+        self.setupConfigurationPage()
 
 
 ################### SERVICES PAGE ###############################
@@ -142,14 +150,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.listWidget_characteristics.clear()
         # IF Heart Rate Service Selected then open HR Page
         if (self.ble_controller.openedService.serviceUuid() == QBluetoothUuid(QBluetoothUuid.HeartRate)):
-            #print("TEST")
             self.stackedWidget.setCurrentIndex(2)       # switch to HEART RATE Page
             self.setupHeartRatePage()
 
         ##WIP
         elif (self.ble_controller.openedService.serviceUuid() == QBluetoothUuid("{0000fe60-cc7a-482a-984a-7f2ed5b3e58f}")):
-            # DODATI CUSTOM OBRADU
-            #print("TEST")
             self.stackedWidget.setCurrentIndex(3)      #SWITCH to BIOMED Page
             self.setupCRS_customPage()
             
@@ -243,6 +248,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.recordingActive = False
         self.elapsed_time = 0
         self.isICMReceived = False
+        self.currentHeartRate = 0
+        self.maxHeartRate = 100
         #graph setup
         self.max30001_graph.setBackground('w')
         self.RXvaluesArray = [0.0]         #Recieved values for plotting
@@ -270,16 +277,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def handleRXValueChanged(self, Charac, newVal):
         if (Charac.uuid() == QBluetoothUuid("{0000fe62-8e22-4541-9d4c-21edae82ed19}")):
             self.RXValue = QByteArray()
-            print(newVal)
             self.RXValue = newVal
             self.RXValueString = self.RXValue.data().decode()
-            
-            self.RXValueFloat = float(self.RXValueString)
+
             self.elapsed_time = time.perf_counter() - self.start_time
 
-            self.updateBMEDGraph(self.elapsed_time, self.RXValueFloat)              # plot new values
+            if (self.RXValueString[0:2] == "HR"):
+                #print("Heart rate is " + self.RXValueString[2:])
+                if (self.elapsed_time > 30.0):
+                    self.currentHeartRate = int(round(float(self.RXValueString[5:])))    # Data format is "HR = %f"
+                    self.label_HeartRateBMED.setText("Average heart rate: " + str(self.currentHeartRate))
+            else:
+                self.RXValueFloat = float(self.RXValueString)
+                self.updateBMEDGraph(self.elapsed_time, self.RXValueFloat)              # plot new values
+
             if(self.recordingActive == True):
                 self.updateLog(self.elapsed_time, self.RXValueString)
+
+            
 
             # if (self.RXValueString == "START_ICM\r\n"):
             #     self.isICMReceived = True
@@ -345,6 +360,60 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #create file and copy content from text browser
 
         #change to stop recording
+
+
+################### MAX30001 DEVICE CONFIGURATION PAGE ###################
+    def setupConfigurationPage(self):
+        self.pushButton_CfgRefresh.clicked.connect(self.availablePortsRefreshList)
+        self.pushButton_CfgEnd.clicked.connect(self.handleButtonExitConfig)
+        self.pushButton_CfgPort.clicked.connect(self.handleButtonOpenPort)
+        self.pushButton_CfgSelectMode.clicked.connect(self.handleButtonCfgSelectMode)
+
+        self.availablePortsRefreshList()
+
+
+
+
+    def availablePortsRefreshList(self):
+        self.AvailablePortsList = QSerialPortInfo.availablePorts()
+        for obj in self.AvailablePortsList:
+            self.comboBox_CfgPorts.addItem(obj.portName(), obj)
+
+    def handleButtonOpenPort(self):
+        self.serialPort = QSerialPort(
+            self.comboBox_CfgPorts.currentData(),
+            None
+        )
+        self.serialPort.setBaudRate(QSerialPort.Baud115200)
+        self.serialPort.setParity(QSerialPort.NoParity)
+        self.serialPort.setFlowControl(QSerialPort.NoFlowControl)
+        self.serialPort.setStopBits(QSerialPort.OneStop)
+        self.serialPort.setDataBits(QSerialPort.Data8)
+
+        self.serialPort.readyRead.connect(self.handleSerialReceiveData)
+
+        if (self.serialPort.open(QIODevice.ReadWrite) == True):
+            self.label_CfgCurrentMode.setEnabled(True)
+            self.label_CfgSelectMode.setEnabled(True)
+            self.comboBox_CfgModes.setEnabled(True)
+            self.pushButton_CfgSelectMode.setEnabled(True)
+
+    def handleButtonCfgSelectMode(self):
+        self.serialPort.writeData(self.comboBox_CfgModes.currentText().encode())
+
+    def handleSerialReceiveData(self):
+        self.textBrowser_CfgOutput.append(self.serialPort.readAll().data().decode())
+
+    def handleButtonExitConfig(self):
+        self.label_CfgCurrentMode.setEnabled(False)
+        self.label_CfgSelectMode.setEnabled(False)
+        self.comboBox_CfgModes.setEnabled(False)
+        self.pushButton_CfgSelectMode.setEnabled(False)
+        self.textBrowser_CfgOutput.clear()
+        self.stackedWidget.setCurrentIndex(0)  #switch to "Devices page"
+        self.serialPort.close()
+        del(self.serialPort)
+
 
 ############ SAVE TEXT TO FILE ###########################################
 
