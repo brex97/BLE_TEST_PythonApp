@@ -287,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if (self.elapsed_time > 30.0):
                     self.currentHeartRate = int(round(float(self.RXValueString[5:])))    # Data format is "HR = %f"
                     self.label_HeartRateBMED.setText("Average heart rate: " + str(self.currentHeartRate))
+                    self.updateTrainingZone(self.currentHeartRate)
             else:
                 self.RXValueFloat = float(self.RXValueString)
                 self.updateBMEDGraph(self.elapsed_time, self.RXValueFloat)              # plot new values
@@ -312,7 +313,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             #     else:                                                       #Data is not ICM
                     
+    def updateTrainingZone(self, CurrentHRValueInt):
+        HRtoMaxHR = CurrentHRValueInt/float(self.maxHeartRate)
+        print(str(HRtoMaxHR))
 
+        if (HRtoMaxHR < 0.65):
+            #Training zone 1
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 1")
+            
+        elif (HRtoMaxHR >= 0.65 and HRtoMaxHR < 0.75):
+            
+            #Training zone 2
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 2")
+            
+        elif (HRtoMaxHR >= 0.75 and HRtoMaxHR < 0.82):
+            #Training zone 3
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 3")
+            
+        elif (HRtoMaxHR >= 0.82 and HRtoMaxHR < 0.89):
+            
+            #Training zone 4
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 4")
+            
+        elif (HRtoMaxHR >= 0.89 and HRtoMaxHR < 0.94):
+            
+            #Training zone 5
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 5")
+            
+        elif (HRtoMaxHR >= 0.94):
+            
+            #Training zone 6
+            self.label_TrainingZoneBMED.setText("Training zone: ZONE 6")
+            
+        else:
+            
+            #Do nothing
+            print("ERROR - shouldn't enter here\n")
+            
         
 
     #UPDATE graph values
